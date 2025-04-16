@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fraud Detection System Tester</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="style/style.css">
+</head>
+
+<body>
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="spinner"></div>
+        <div class="loading-text">Analyzing...</div>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-shield-alt"></i> Fraud Detection System Tester</h1>
+            <button class="theme-toggle" id="theme-toggle">
+                <i class="fas fa-moon"></i>
+            </button>
+        </div>
+
+        <div class="main">
+            <!-- Database Section -->
+            <div class="card">
+                <div class="card-header">
+                    <span>MongoDB Test Database</span>
+                    <button id="collapse-database" class="collapse-button">
+                        <i class="fas fa-chevron-up"></i>
+                    </button>
+                </div>
+                <div class="card-body collapsible expanded" id="database-body">
+                    <div class="database-section">
+                        <div class="database-actions">
+                            <button id="refresh-stats" class="btn btn-outline">
+                                <i class="fas fa-sync"></i> Refresh Stats
+                            </button>
+                            <button id="generate-database" class="btn btn-primary">
+                                <i class="fas fa-database"></i> Generate Test Data
+                            </button>
+                        </div>
+
+                        <div class="stats-container" id="database-stats">
+                            <div class="stat-card">
+                                <h4>Users</h4>
+                                <p id="stat-users">-</p>
+                            </div>
+                            <div class="stat-card">
+                                <h4>Devices</h4>
+                                <p id="stat-devices">-</p>
+                            </div>
+                            <div class="stat-card">
+                                <h4>Logins</h4>
+                                <p id="stat-logins">-</p>
+                            </div>
+                            <div class="stat-card">
+                                <h4>Failed Logins</h4>
+                                <p id="stat-failed-logins">-</p>
+                            </div>
+                            <div class="stat-card">
+                                <h4>IPs</h4>
+                                <p id="stat-ip-data">-</p>
+                            </div>
+                            <div class="stat-card">
+                                <h4>Sessions</h4>
+                                <p id="stat-sessions">-</p>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="user-select">Select User from Database:</label>
+                            <select id="user-select" class="user-select">
+                                <option value="">-- Select a user --</option>
+                            </select>
+                        </div>
+
+                        <div class="user-info" id="user-info" style="display: none;">
+                            <h4>User Information</h4>
+                            <div class="user-info-details">
+                                <div>
+                                    <p><strong>User ID:</strong> <span id="info-user-id"></span></p>
+                                    <p><strong>Email:</strong> <span id="info-email"></span></p>
+                                    <p><strong>Created:</strong> <span id="info-created"></span></p>
+                                    <p><strong>Devices:</strong> <span id="info-devices"></span></p>
+                                </div>
+                                <div>
+                                    <p><strong>Last Login:</strong> <span id="info-last-login"></span></p>
+                                    <p><strong>Last IP:</strong> <span id="info-last-ip"></span></p>
+                                    <p><strong>Last Location:</strong> <span id="info-last-location"></span></p>
+                                </div>
+                            </div>
+
+                            <div class="tab-headers">
+                                <div class="tab-header active" data-tab="login-history">Login History</div>
+                                <div class="tab-header" data-tab="user-devices">Devices</div>
+                                <div class="tab-header" data-tab="user-sessions">Sessions</div>
+                            </div>
+
+                            <div id="login-history-tab" class="tab-content active">
+                                <h4>Recent Logins</h4>
+                                <div class="login-history" id="login-history">
+                                    <!-- Login history will be populated here -->
+                                </div>
+                            </div>
+
+                            <div id="user-devices-tab" class="tab-content">
+                                <h4>User Devices</h4>
+                                <div id="user-devices-list">
+                                    <!-- Devices will be populated here -->
+                                </div>
+                            </div>
+
+                            <div id="user-sessions-tab" class="tab-content">
+                                <h4>Session Events</h4>
+                                <div class="session-events-list" id="session-events">
+                                    <!-- Session events will be populated here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Request Parameters Section -->
+            <div class="card">
+                <div class="card-header">
+                    <span>Test Request Parameters</span>
+                    <button id="collapse-params" class="collapse-button">
+                        <i class="fas fa-chevron-up"></i>
+                    </button>
+                </div>
+                <div class="card-body collapsible expanded" id="params-body">
+                    <div class="form-group">
+                        <label for="user-id">User ID:</label>
+                        <input type="text" id="user-id" class="form-control" placeholder="e.g., user123">
+                    </div>
+                    <div class="form-group">
+                        <label for="ip-address">IP Address:</label>
+                        <input type="text" id="ip-address" class="form-control" placeholder="e.g., 192.168.1.1">
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email:</label>
+                        <input type="email" id="email" class="form-control" placeholder="e.g., user@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="user-agent">User Agent:</label>
+                        <input type="text" id="user-agent" class="form-control"
+                            placeholder="Will use your browser's User-Agent if left empty">
+                    </div>
+                    <div class="form-group">
+                        <label for="timestamp">Timestamp (leave empty for current time):</label>
+                        <input type="text" id="timestamp" class="form-control" placeholder="Unix timestamp in seconds">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Device Fingerprint Options:</label>
+                        <div class="flex gap-2 mt-4">
+                            <button id="collect-fingerprint" class="btn btn-outline">Collect Browser
+                                Fingerprint</button>
+                            <button id="import-fingerprint" class="btn btn-outline">Import Fingerprint</button>
+                            <button id="use-db-fingerprint" class="btn btn-outline">Use Database Fingerprint</button>
+                        </div>
+
+                        <div id="import-fingerprint-section" class="mt-4" style="display: none;">
+                            <textarea id="manual-fingerprint-data" class="form-control form-control-textarea"
+                                placeholder="Paste a JSON fingerprint here"></textarea>
+                            <small class="text-muted">Paste a previously saved device fingerprint JSON</small>
+                        </div>
+
+                        <textarea id="fingerprint-data" class="form-control form-control-textarea mt-4"
+                            placeholder="Device fingerprint data will appear here" readonly></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Session Events:</label>
+                        <div class="flex gap-2 mb-2">
+                            <button id="use-db-events" class="btn btn-outline">Use Session From Database</button>
+                            <button id="clear-events" class="btn btn-outline">Clear Events</button>
+                        </div>
+                        <div class="event-builder">
+                            <div class="flex flex-wrap gap-2">
+                                <select id="event-type" class="form-control">
+                                    <option value="login">Login</option>
+                                    <option value="view_dashboard">View Dashboard</option>
+                                    <option value="view_account">View Account</option>
+                                    <option value="view_transactions">View Transactions</option>
+                                    <option value="view_profile">View Profile</option>
+                                    <option value="edit_profile">Edit Profile</option>
+                                    <option value="change_password">Change Password</option>
+                                    <option value="change_email">Change Email</option>
+                                    <option value="add_payment_method">Add Payment Method</option>
+                                    <option value="large_transaction">Large Transaction</option>
+                                    <option value="export_data">Export Data</option>
+                                    <option value="disable_2fa">Disable 2FA</option>
+                                    <option value="logout">Logout</option>
+                                </select>
+                                <input type="text" id="event-timestamp" class="form-control"
+                                    placeholder="Timestamp (optional)">
+                                <button id="add-event" class="btn btn-primary">Add Event</button>
+                            </div>
+                            <div id="event-list" class="event-list">
+                                <!-- Events will be added here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="flex gap-2">
+                            <button id="test-all" class="btn btn-primary btn-block">Analyze All Predictors</button>
+                            <button id="test-selected-user" class="btn btn-primary btn-block">Analyze Selected
+                                User</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results Section -->
+            <div class="card">
+                <div class="card-header">
+                    <span>Analysis Results</span>
+                    <div>
+                        <button id="clear-results" class="btn btn-outline" style="margin-right: 0.5rem;">Clear</button>
+                        <button id="collapse-results" class="collapse-button">
+                            <i class="fas fa-chevron-up"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body collapsible expanded" id="results-body">
+                    <div id="results-container" style="display: none;">
+                        <div id="risk-score-container" class="risk-score-container">
+                            <div id="overall-score" class="risk-score">0</div>
+                            <div id="risk-level" class="risk-level">Unknown</div>
+                            <div id="recommendation" class="recommendation">No recommendation yet</div>
+                        </div>
+
+                        <div class="tabs">
+                            <div class="tab active" data-tab="summary">Summary</div>
+                            <div class="tab" data-tab="details">Details</div>
+                            <div class="tab" data-tab="raw">Raw Response</div>
+                        </div>
+
+                        <div id="summary-tab" class="tab-content active">
+                            <h3>Predictor Scores</h3>
+                            <div id="predictor-grid" class="predictor-grid">
+                                <!-- Predictor cards will be added here -->
+                            </div>
+                        </div>
+
+                        <div id="details-tab" class="tab-content">
+                            <div id="detailed-results"></div>
+                        </div>
+
+                        <div id="raw-tab" class="tab-content">
+                            <pre id="raw-results"></pre>
+                        </div>
+                    </div>
+                    <div id="initial-message" class="risk-score-container">
+                        <p>Click "Analyze All Predictors" to see results</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/fingerprint.js"></script>
+    <script src="js/script.js"></script>
+</body>
+
+</html>

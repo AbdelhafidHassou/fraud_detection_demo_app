@@ -140,7 +140,7 @@ class AccountVelocityMonitor:
             # Log high-risk velocities
             if risk_score > 70:
                 logger.warning(f"High-risk account velocity detected for IP {ip_address}")
-
+            
             return result
             
         except Exception as e:

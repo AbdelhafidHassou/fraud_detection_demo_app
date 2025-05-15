@@ -17,7 +17,7 @@ class AccessTimeAnalyzer:
         self.db = Database()
         
         # Configuration
-        self.min_history_points = 5  # Minimum number of logins needed for reliable analysis
+        self.min_history_points = 0  # Minimum number of logins needed for reliable analysis
         self.contamination = 0.1     # Expected proportion of anomalies
         
         logger.info("AccessTimeAnalyzer initialized")

@@ -2,6 +2,11 @@ from flask import Blueprint, request, jsonify
 import logging
 import time
 
+from app.predictors.ml_access_time import MLAccessTimeAnalyzer
+from app.predictors.ml_auth_behavior import MLAuthBehaviorAnalyzer
+from app.predictors.ml_session_anomaly import MLSessionAnomalyDetector
+from core.config import settings
+
 # Import predictors
 from app.predictors.user_agent import UserAgentAnalyzer
 from app.predictors.geo_velocity import GeoVelocityDetector
@@ -28,6 +33,11 @@ account_velocity_monitor = AccountVelocityMonitor()
 session_anomaly_detector = SessionAnomalyDetector()
 ip_reputation_checker = IPReputationChecker()
 
+# Initialize ML predictors
+ml_access_time_analyzer = MLAccessTimeAnalyzer()
+ml_auth_behavior_analyzer = MLAuthBehaviorAnalyzer()
+ml_session_anomaly_detector = MLSessionAnomalyDetector()
+
 @api.route('/analyze', methods=['POST'])
 def analyze_request():
     """
@@ -46,6 +56,7 @@ def analyze_request():
         
         # Run all predictors
         results = {
+            # Existing predictors
             'user_agent': user_agent_analyzer.analyze(user_agent),
             'geo_velocity': geo_velocity_detector.detect(user_id, ip_address, timestamp),
             'access_time': access_time_analyzer.analyze(user_id, timestamp),
@@ -53,24 +64,41 @@ def analyze_request():
             'device': device_fingerprinter.analyze(data.get('device_fingerprint', {})),
             'account_velocity': account_velocity_monitor.check(ip_address, email),
             'session': session_anomaly_detector.detect(user_id, session_events),
-            'ip_reputation': ip_reputation_checker.check(ip_address)
+            'ip_reputation': ip_reputation_checker.check(ip_address),
+            
+            # Add the new ML-based predictors
+            'ml_access_time': ml_access_time_analyzer.analyze(user_id, timestamp),
+            'ml_auth_behavior': ml_auth_behavior_analyzer.analyze(user_id, ip_address, timestamp),
+            'ml_session_anomaly': ml_session_anomaly_detector.detect(user_id, session_events)
         }
         
-        # Calculate overall risk score (weighted average)
+        # Update the weights dictionary with new predictors
+        # You can either update the existing weights or use config values
         weights = {
-            'user_agent': 0.10,
-            'geo_velocity': 0.20,
-            'access_time': 0.10,
-            'password_attack': 0.15,
-            'device': 0.15,
-            'account_velocity': 0.10,
-            'session': 0.10,
-            'ip_reputation': 0.10
+            # Existing weights
+            'user_agent': 0.08,
+            'geo_velocity': 0.15,
+            'access_time': 0.08,
+            'password_attack': 0.12,
+            'device': 0.12,
+            'account_velocity': 0.08,
+            'session': 0.08,
+            'ip_reputation': 0.09,
+            
+            # New predictors with weights from config
+            'ml_access_time': settings.PREDICTOR_WEIGHTS.get('access_time', 0.06),
+            'ml_auth_behavior': settings.PREDICTOR_WEIGHTS.get('auth_behavior', 0.08),
+            'ml_session_anomaly': settings.PREDICTOR_WEIGHTS.get('session_anomaly', 0.06)
         }
         
+        # Normalize weights to ensure they sum to 1.0
+        weight_sum = sum(weights.values())
+        normalized_weights = {k: v/weight_sum for k, v in weights.items()}
+        
+        # Calculate weighted risk score
         weighted_sum = sum(
-            results[key].get('risk_score', 0) * weights[key]
-            for key in weights
+            results[key].get('risk_score', 0) * normalized_weights[key]
+            for key in normalized_weights
         )
         
         overall_risk = round(weighted_sum)
@@ -92,6 +120,51 @@ def analyze_request():
         logger.error(f"Error analyzing request: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
+
+@api.route('/analyze/ml-access-time', methods=['POST'])
+def analyze_ml_access_time():
+    """Endpoint to analyze access time using ML model"""
+    try:
+        data = request.json
+        user_id = data.get('user_id')
+        timestamp = data.get('timestamp', int(time.time()))
+        
+        result = ml_access_time_analyzer.analyze(user_id, timestamp)
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"Error analyzing access time with ML: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+
+@api.route('/analyze/ml-auth-behavior', methods=['POST'])
+def analyze_ml_auth_behavior():
+    """Endpoint to analyze authentication behavior using ML model"""
+    try:
+        data = request.json
+        user_id = data.get('user_id')
+        ip_address = data.get('ip_address', request.remote_addr)
+        timestamp = data.get('timestamp', int(time.time()))
+        
+        result = ml_auth_behavior_analyzer.analyze(user_id, ip_address, timestamp)
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"Error analyzing auth behavior with ML: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+
+@api.route('/analyze/ml-session-anomaly', methods=['POST'])
+def analyze_ml_session_anomaly():
+    """Endpoint to analyze session anomalies using ML model"""
+    try:
+        data = request.json
+        user_id = data.get('user_id')
+        session_events = data.get('session_events', [])
+        
+        result = ml_session_anomaly_detector.detect(user_id, session_events)
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"Error analyzing session anomalies with ML: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 @api.route('/analyze/user-agent', methods=['POST'])
 def analyze_user_agent():

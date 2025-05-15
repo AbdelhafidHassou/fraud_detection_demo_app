@@ -678,8 +678,15 @@ document.addEventListener('DOMContentLoaded', function () {
         predictorGrid.innerHTML = '';
 
         for (const [predictorName, predictorResult] of Object.entries(result.predictors)) {
+            // Add display names for new predictors
+            const displayNames = {
+                // Existing mappings...
+                'ml_access_time': 'ML Access Time',
+                'ml_auth_behavior': 'ML Auth Behavior',
+                'ml_session_anomaly': 'ML Session Anomaly'
+            };
             // Format display name
-            const displayName = predictorName.replace(/_/g, ' ')
+            const displayName = displayNames[predictorName] || predictorName.replace(/_/g, ' ')
                 .split(' ')
                 .map(word => word.charAt(0).toUpperCase() + word.slice(1))
                 .join(' ');
@@ -750,6 +757,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 detailsHTML = buildDeviceDetails(predictorResult);
             } else if (predictorName === 'session') {
                 detailsHTML = buildSessionDetails(predictorResult);
+            } else if (predictorName === 'ml_access_time') {
+                detailsHTML = buildMLAccessTimeDetails(predictorResult);
+            } else if (predictorName === 'ml_auth_behavior') {
+                detailsHTML = buildMLAuthBehaviorDetails(predictorResult);
+            } else if (predictorName === 'ml_session_anomaly') {
+                detailsHTML = buildMLSessionAnomalyDetails(predictorResult);
             } else {
                 // Generic detail builder
                 detailsHTML = '<ul class="details-list">';
@@ -973,6 +986,44 @@ document.addEventListener('DOMContentLoaded', function () {
                 ` : ''}
             </div>
         `;
+    }
+
+    function buildMLAccessTimeDetails(result) {
+        return `
+        <div class="details-content">
+            <h4>ML Access Time Analysis</h4>
+            <ul class="details-list">
+                <li><strong>Status:</strong> ${result.status || 'N/A'}</li>
+                <li><strong>Message:</strong> ${result.message || 'N/A'}</li>
+            </ul>
+        </div>
+    `;
+    }
+
+    function buildMLAuthBehaviorDetails(result) {
+        return `
+        <div class="details-content">
+            <h4>Authentication Behavior ML Analysis</h4>
+            <ul class="details-list">
+                <li><strong>Status:</strong> ${result.status || 'N/A'}</li>
+                <li><strong>Message:</strong> ${result.message || 'N/A'}</li>
+            </ul>
+        </div>
+    `;
+    }
+
+    function buildMLSessionAnomalyDetails(result) {
+        return `
+        <div class="details-content">
+            <h4>Session Anomaly ML Analysis</h4>
+            <ul class="details-list">
+                <li><strong>Anomaly Score:</strong> ${result.anomaly_score || 0}</li>
+                <li><strong>Events Analyzed:</strong> ${result.events_analyzed || 0}</li>
+                <li><strong>Status:</strong> ${result.status || 'N/A'}</li>
+                <li><strong>Message:</strong> ${result.message || 'N/A'}</li>
+            </ul>
+        </div>
+    `;
     }
 
     function formatTimestamp(timestamp) {

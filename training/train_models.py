@@ -1,34 +1,20 @@
-# run.py
-from app import create_app
-import os
+# train_models.py
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
 import random
-import logging
-import time
+import os
+import sys
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
+# Add project root to path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-def check_models_exist():
-    """Check if trained models exist"""
-    model_files = [
-        "models/access_time_model.joblib",
-        "models/auth_behavior_model.joblib", 
-        "models/session_anomaly_model.joblib"
-    ]
-    
-    return all(os.path.exists(f) for f in model_files)
+from ml.models.access_time_model import AccessTimeAnomalyDetector
+from ml.models.auth_behavior_model import AuthBehaviorDetector
+from ml.models.session_anomaly_model import SessionAnomalyDetector
 
 def generate_sample_data(num_samples=1000):
     """Generate sample data for training"""
-    logger.info(f"Generating {num_samples} samples of training data...")
-    
     # Get current time
     now = datetime.now()
     
@@ -60,14 +46,12 @@ def generate_sample_data(num_samples=1000):
         # Create event data
         event = {
             'user_id': user_id,
-            # Keep as datetime object instead of converting to int
-            'timestamp': timestamp,  # Changed from int(timestamp.timestamp())
+            'timestamp': timestamp,
             'is_anomaly': is_anomaly,
             'ip_address': f"192.168.1.{random.randint(1, 255)}",
             'context': {
                 'device_id': f"device-{random.randint(1, 5)}",
                 'session_id': f"session-{random.randint(1, 100)}",
-                'endpoint': random.choice(['login', 'dashboard', 'profile', 'settings']),
                 'geo_location': {
                     'country': 'US',
                     'city': 'New York',
@@ -82,50 +66,32 @@ def generate_sample_data(num_samples=1000):
     return pd.DataFrame(data)
 
 def train_models():
-    """Train all ML models with sample data"""
-    logger.info("First run detected - training models with sample data...")
-    
-    # Import models here to avoid circular imports
-    from ml.models.access_time_model import AccessTimeAnomalyDetector
-    from ml.models.auth_behavior_model import AuthBehaviorDetector
-    from ml.models.session_anomaly_model import SessionAnomalyDetector
-    
-    # Create models directory if it doesn't exist
-    os.makedirs("models", exist_ok=True)
-    
-    # Generate sample data
+    """Train all ML models"""
+    print("Generating sample training data...")
     training_data = generate_sample_data(1000)
     
-    # Train access time model
-    logger.info("Training AccessTimeAnomalyDetector...")
+    print("Training AccessTimeAnomalyDetector...")
     access_time_model = AccessTimeAnomalyDetector()
     access_time_model.train(training_data)
     access_time_model.save_model()
+    print("AccessTimeAnomalyDetector trained and saved.")
     
-    # Train auth behavior model
-    logger.info("Training AuthBehaviorDetector...")
+    print("Training AuthBehaviorDetector...")
     auth_behavior_model = AuthBehaviorDetector()
     auth_behavior_model.train(training_data)
     auth_behavior_model.save_model()
+    print("AuthBehaviorDetector trained and saved.")
     
-    # Train session anomaly model
-    logger.info("Training SessionAnomalyDetector...")
+    print("Training SessionAnomalyDetector...")
     session_anomaly_model = SessionAnomalyDetector()
     session_anomaly_model.train(training_data)
     session_anomaly_model.save_model()
+    print("SessionAnomalyDetector trained and saved.")
     
-    logger.info("All models trained and saved successfully!")
+    print("All models trained and saved successfully!")
 
-# Main application
-if __name__ == '__main__':
-    # Check if models exist, train if not
-    if not check_models_exist():
-        train_models()
-        # Small delay to ensure files are completely written
-        time.sleep(1)
-    else:
-        logger.info("Trained models found - skipping training step")
+if __name__ == "__main__":
+    # Create models directory if it doesn't exist
+    os.makedirs("models", exist_ok=True)
     
-    # Create and run app
-    app = create_app()
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    train_models()

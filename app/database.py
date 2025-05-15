@@ -643,3 +643,213 @@ class Database:
             
         except Exception as e:
             logger.error(f"Error updating user model: {str(e)}")
+
+    def get_auth_history(self, user_id, limit=50):
+        """
+        Get authentication history for a user
+        
+        Args:
+            user_id (str): User identifier
+            limit (int): Maximum number of events to return
+            
+        Returns:
+            list: List of authentication events
+        """
+        try:
+            if self.db_type == 'mongodb':
+                # Fetch from MongoDB
+                auth_events = list(
+                    self.mongo_db.auth_events.find(
+                        {'user_id': user_id}
+                    ).sort('timestamp', -1).limit(limit)
+                )
+                return auth_events
+            else:
+                # Fetch from file system
+                auth_dir = f"{self.data_dir}/auth_events"
+                os.makedirs(auth_dir, exist_ok=True)
+                
+                auth_file = f"{auth_dir}/{user_id}.json"
+                
+                if os.path.exists(auth_file):
+                    with open(auth_file, 'r') as f:
+                        auth_events = json.load(f)
+                        auth_events.sort(key=lambda x: x['timestamp'], reverse=True)
+                        return auth_events[:limit]
+                
+                return []
+                
+        except Exception as e:
+            logger.error(f"Error getting auth history for user {user_id}: {str(e)}")
+            return []
+
+    def store_auth_event(self, event_data):
+        """
+        Store authentication event
+        
+        Args:
+            event_data (dict): Authentication event data
+        """
+        try:
+            user_id = event_data.get('user_id')
+            
+            if self.db_type == 'mongodb':
+                # Store in MongoDB
+                self.mongo_db.auth_events.insert_one(event_data)
+            else:
+                # Store in file system
+                auth_dir = f"{self.data_dir}/auth_events"
+                os.makedirs(auth_dir, exist_ok=True)
+                
+                auth_file = f"{auth_dir}/{user_id}.json"
+                
+                # Read existing events
+                if os.path.exists(auth_file):
+                    with open(auth_file, 'r') as f:
+                        auth_events = json.load(f)
+                else:
+                    auth_events = []
+                
+                # Add new event
+                auth_events.append(event_data)
+                
+                # Keep only last 100 events
+                auth_events = auth_events[-100:]
+                
+                # Write back to file
+                with open(auth_file, 'w') as f:
+                    json.dump(auth_events, f)
+                
+            logger.debug(f"Stored auth event for user {user_id}")
+            
+        except Exception as e:
+            logger.error(f"Error storing auth event: {str(e)}")
+
+    def get_historical_sessions(self, user_id, limit=20):
+        """
+        Get historical session data for a user
+        
+        Args:
+            user_id (str): User identifier
+            limit (int): Maximum number of sessions to return
+            
+        Returns:
+            list: List of session events
+        """
+        try:
+            if self.db_type == 'mongodb':
+                # Fetch from MongoDB
+                sessions = list(
+                    self.mongo_db.sessions.find(
+                        {'user_id': user_id}
+                    ).sort('timestamp', -1).limit(limit)
+                )
+                return sessions
+            else:
+                # Fetch from file system
+                sessions_dir = f"{self.data_dir}/sessions"
+                os.makedirs(sessions_dir, exist_ok=True)
+                
+                sessions_file = f"{sessions_dir}/{user_id}.json"
+                
+                if os.path.exists(sessions_file):
+                    with open(sessions_file, 'r') as f:
+                        sessions = json.load(f)
+                        sessions.sort(key=lambda x: x['timestamp'], reverse=True)
+                        return sessions[:limit]
+                
+                return []
+                
+        except Exception as e:
+            logger.error(f"Error getting historical sessions for user {user_id}: {str(e)}")
+            return []
+
+    def store_session(self, user_id, session_events):
+        """
+        Store session events
+        
+        Args:
+            user_id (str): User identifier
+            session_events (list): List of session events
+        """
+        try:
+            if not session_events:
+                return
+            
+            # Sort events by timestamp
+            sorted_events = sorted(session_events, key=lambda x: x.get('timestamp', 0))
+            
+            # Create session object
+            session_id = sorted_events[0].get('session_id', str(time.time()))
+            start_time = sorted_events[0].get('timestamp', int(time.time()))
+            end_time = sorted_events[-1].get('timestamp', int(time.time()))
+            
+            session_data = {
+                'user_id': user_id,
+                'session_id': session_id,
+                'timestamp': end_time,  # Use last event timestamp
+                'start_time': start_time,
+                'end_time': end_time,
+                'duration': end_time - start_time,
+                'event_count': len(session_events),
+                'events': session_events
+            }
+            
+            if self.db_type == 'mongodb':
+                # Store in MongoDB
+                self.mongo_db.sessions.insert_one(session_data)
+            else:
+                # Store in file system
+                sessions_dir = f"{self.data_dir}/sessions"
+                os.makedirs(sessions_dir, exist_ok=True)
+                
+                sessions_file = f"{sessions_dir}/{user_id}.json"
+                
+                # Read existing sessions
+                if os.path.exists(sessions_file):
+                    with open(sessions_file, 'r') as f:
+                        sessions = json.load(f)
+                else:
+                    sessions = []
+                
+                # Add new session
+                sessions.append(session_data)
+                
+                # Keep only last 20 sessions
+                sessions = sessions[-20:]
+                
+                # Write back to file
+                with open(sessions_file, 'w') as f:
+                    json.dump(sessions, f)
+                
+            logger.debug(f"Stored session for user {user_id}")
+            
+        except Exception as e:
+            logger.error(f"Error storing session: {str(e)}")
+
+    def get_recent_device_data(self, user_id):
+        """
+        Get most recent device data for a user
+        
+        Args:
+            user_id (str): User identifier
+            
+        Returns:
+            dict: Device data or None if not found
+        """
+        try:
+            devices = self.get_device_data(user_id=user_id)
+            
+            if not devices:
+                return None
+            
+            # If multiple devices, get the most recently used one
+            if isinstance(devices, list):
+                devices.sort(key=lambda x: x.get('last_seen', 0), reverse=True)
+                return devices[0] if devices else None
+            
+            return devices
+            
+        except Exception as e:
+            logger.error(f"Error getting recent device data for {user_id}: {str(e)}")
+            return None

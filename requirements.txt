@@ -12,6 +12,7 @@ numpy
 pandas
 scikit-learn
 scipy
+joblib  # For ML model persistence
 
 # Geolocation
 maxminddb
@@ -29,3 +30,7 @@ pyjwt
 
 # Testing
 pytest
+
+# Data validation and settings
+pydantic
+pydantic-settings

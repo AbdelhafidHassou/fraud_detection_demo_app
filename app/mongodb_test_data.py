@@ -629,6 +629,7 @@ def get_user_data(user_id):
 # API route to run full fraud analysis
 @app.route('/api/analyze/<user_id>', methods=['POST'])
 def analyze_user(user_id):
+    
     """Run full fraud analysis for a user"""
     try:
         # For real analysis, we would integrate with your fraud detection modules here
@@ -651,50 +652,251 @@ def analyze_user(user_id):
         if ip_data and 'reputation' in ip_data:
             ip_reputation = ip_data['reputation']
         
-        # Mock analysis results
-        results = {
-            'user_agent': {
-                'risk_score': random.randint(0, 100),
-                'status': random.choice(['normal', 'suspicious', 'highly_suspicious']),
-                'message': "User agent analysis complete"
-            },
-            'geo_velocity': {
-                'risk_score': random.randint(0, 100),
-                'status': random.choice(['normal_travel', 'suspicious_travel', 'impossible_travel']),
-                'message': "Geo-velocity analysis complete"
-            },
-            'access_time': {
-                'risk_score': random.randint(0, 100),
-                'status': random.choice(['normal', 'medium_anomaly', 'high_anomaly']),
-                'message': "Access time analysis complete"
-            },
-            'device': {
-                'risk_score': random.randint(0, 100),
-                'status': random.choice(['normal', 'suspicious', 'unknown_device']),
-                'message': "Device analysis complete"
-            },
-            'ip_reputation': {
-                'risk_score': ip_reputation['score'] if ip_reputation else random.randint(0, 100),
-                'status': random.choice(['trusted', 'low_risk', 'medium_risk', 'high_risk', 'critical']),
-                'message': "IP reputation analysis complete"
-            },
-            'password_attack': {
-                'risk_score': random.randint(0, 100),
-                'attack_detected': random.random() < 0.2,
-                'attack_type': random.choice([None, 'bruteforce', 'credential_stuffing', 'password_spraying']),
-                'message': "Password attack analysis complete"
-            },
-            'account_velocity': {
-                'risk_score': random.randint(0, 100),
-                'status': random.choice(['normal_velocity', 'elevated_velocity', 'high_velocity']),
-                'message': "Account velocity analysis complete"
-            },
-            'session': {
-                'risk_score': random.randint(0, 100),
-                'status': random.choice(['normal_behavior', 'suspicious_behavior', 'high_risk_behavior']),
-                'message': "Session analysis complete"
+        
+        # Create mock Database class to interface with the MongoDB directly
+        # Create mock Database class to interface with the MongoDB directly
+        # This adapts our MongoDB test data to work with the predictors
+        class MockDatabase:
+            def __init__(self, db_instance):
+                self.db = db_instance
+            
+            def get_login_history(self, user_id, limit=10):
+                return list(self.db.logins.find({'user_id': user_id}).sort('timestamp', -1).limit(limit))
+            
+            def get_last_login(self, user_id):
+                logins = list(self.db.logins.find({'user_id': user_id}).sort('timestamp', -1).limit(1))
+                return logins[0] if logins else None
+            
+            def store_login(self, login_data):
+                # In test mode, we don't need to store anything
+                pass
+            
+            def get_ip_location(self, ip_address):
+                ip_data = self.db.ip_data.find_one({'ip_address': ip_address})
+                if ip_data and 'location' in ip_data:
+                    return ip_data['location']
+                return None
+            
+            def get_ip_reputation(self, ip_address):
+                ip_data = self.db.ip_data.find_one({'ip_address': ip_address})
+                if ip_data and 'reputation' in ip_data:
+                    return ip_data['reputation']
+                return None
+            
+            def update_ip_reputation(self, ip_address, reputation_data):
+                # In test mode, we don't need to update anything
+                pass
+            
+            def get_device_data(self, device_id=None, user_id=None):
+                if device_id:
+                    return self.db.devices.find_one({'device_id': device_id})
+                elif user_id:
+                    return list(self.db.devices.find({'user_id': user_id}))
+                return None
+            
+            def store_device_data(self, device_id, device_data):
+                # In test mode, we don't need to store anything
+                pass
+            
+            def get_recent_failed_logins(self, username=None, ip_address=None, minutes=30):
+                cutoff_time = int(time.time()) - (minutes * 60)
+                query = {'timestamp': {'$gt': cutoff_time}}
+                
+                if username:
+                    query['username'] = username
+                if ip_address:
+                    query['ip_address'] = ip_address
+                    
+                return list(self.db.failed_logins.find(query))
+            
+            def get_user_model(self, user_id):
+                return self.db.user_models.find_one({'user_id': user_id})
+            
+            def update_user_model(self, user_id, model_data):
+                # In test mode, we don't need to update anything
+                pass
+                
+            # Add the missing method for the AccountVelocityMonitor
+            def get_registrations(self, entity_type=None, entity_value=None):
+                """
+                Get registration timestamps for an entity (IP, subnet, domain)
+                
+                Args:
+                    entity_type (str): Entity type ('ip', 'subnet', 'email_domain')
+                    entity_value (str): Entity value
+                    
+                Returns:
+                    list: Registration timestamps
+                """
+                query = {}
+                
+                if entity_type == 'ip':
+                    query['ip_address'] = entity_value
+                elif entity_type == 'subnet':
+                    # For subnet, we need to match IPs that start with the subnet prefix
+                    subnet_prefix = entity_value.split('/')[0]  # Get the network part without mask
+                    subnet_prefix = subnet_prefix.rsplit('.', 1)[0]  # Remove the last octet
+                    query['ip_address'] = {'$regex': f'^{subnet_prefix}'}
+                elif entity_type == 'email_domain':
+                    query['email_domain'] = entity_value
+                    
+                # Get registrations matching query
+                registrations = list(self.db.registrations.find(query))
+                
+                # Extract timestamps
+                return [r['timestamp'] for r in registrations]
+
+        try:
+            # Import the necessary predictors with sys.path adjustment to make imports work
+            import sys
+            import os
+
+            # Need to go up one directory level to find the app directory
+            sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+            # Now we can safely import the predictors
+            from app.predictors.user_agent import UserAgentAnalyzer
+            from app.predictors.geo_velocity import GeoVelocityDetector
+            from app.predictors.access_time import AccessTimeAnalyzer
+            from app.predictors.device_fingerprint import DeviceFingerprinter
+            from app.predictors.ip_reputation import IPReputationChecker
+            from app.predictors.password_attack import PasswordAttackDetector
+            from app.predictors.account_velocity import AccountVelocityMonitor
+            from app.predictors.session_anomaly import SessionAnomalyDetector
+
+            # Create a mock database instance that will connect predictors to our MongoDB test data
+            mock_db = MockDatabase(db)
+
+            # Monkey-patch the Database module in each predictor file
+            import app.predictors.user_agent
+            import app.predictors.geo_velocity
+            import app.predictors.access_time
+            import app.predictors.device_fingerprint
+            import app.predictors.ip_reputation
+            import app.predictors.password_attack
+            import app.predictors.account_velocity
+            import app.predictors.session_anomaly
+
+            # Replace Database instances with our mock
+            app.predictors.user_agent.Database = lambda: mock_db
+            app.predictors.geo_velocity.Database = lambda: mock_db
+            app.predictors.access_time.Database = lambda: mock_db
+            app.predictors.device_fingerprint.Database = lambda: mock_db
+            app.predictors.ip_reputation.Database = lambda: mock_db
+            app.predictors.password_attack.Database = lambda: mock_db
+            app.predictors.account_velocity.Database = lambda: mock_db
+            app.predictors.session_anomaly.Database = lambda: mock_db
+
+            # Initialize analyzers with our patches in place
+            ua_analyzer = UserAgentAnalyzer()
+            geo_detector = GeoVelocityDetector()
+            time_analyzer = AccessTimeAnalyzer()
+            device_analyzer = DeviceFingerprinter()
+            ip_checker = IPReputationChecker()
+            password_detector = PasswordAttackDetector()
+            velocity_monitor = AccountVelocityMonitor()
+            session_detector = SessionAnomalyDetector()
+
+            logger.info("Successfully initialized fraud detection predictors")
+
+            # Get user agent from request
+            user_agent_string = request.headers.get('User-Agent', '')
+
+            # Get session events for the user
+            session_events = list(db.sessions.find({'user_id': user_id}))
+
+            # Analyze user agent
+            ua_result = ua_analyzer.analyze(user_agent_string)
+
+            # Analyze geo-velocity
+            current_timestamp = int(time.time())
+            geo_result = geo_detector.detect(user_id, ip_address, current_timestamp)
+
+            # Analyze access time pattern
+            time_result = time_analyzer.analyze(user_id, current_timestamp)
+
+            # Get device fingerprint data from request
+            # For test data, we'll try to find a device for this user
+            user_devices = list(db.devices.find({'user_id': user_id}))
+            fingerprint_data = {}
+            if user_devices and 'fingerprints' in user_devices[0] and user_devices[0]['fingerprints']:
+                fingerprint_data = user_devices[0]['fingerprints'][0]
+
+            device_result = device_analyzer.analyze(fingerprint_data)
+
+            # Check IP reputation
+            ip_result = ip_checker.check(ip_address)
+
+            # Detect password attacks
+            password_result = password_detector.detect(user_id, ip_address)
+
+            # Monitor account velocity
+            email = user.get('email', '')
+            velocity_result = velocity_monitor.check(ip_address, email)
+
+            # Detect session anomalies
+            session_result = session_detector.detect(user_id, session_events)
+
+            # Create analysis results using the real predictors
+            # But use safe accessors to avoid KeyError exceptions
+            results = {
+                'user_agent': {
+                    'risk_score': ua_result.get('risk_score', 0),
+                    'status': ua_result.get('status', 'normal'),
+                    'message': ua_result.get('message', "User agent analysis complete")
+                },
+                'geo_velocity': {
+                    'risk_score': geo_result.get('risk_score', 0),
+                    'status': geo_result.get('status', 'normal_travel'),
+                    'message': geo_result.get('message', "Geo-velocity analysis complete")
+                },
+                'access_time': {
+                    'risk_score': time_result.get('risk_score', 0),
+                    'status': time_result.get('status', 'normal'),
+                    'message': time_result.get('message', "Access time analysis complete")
+                },
+                'device': {
+                    'risk_score': device_result.get('risk_score', 0),
+                    'status': 'unknown_device' if not device_result.get('is_known_device', False) else
+                            ('suspicious' if device_result.get('is_suspicious', False) else 'normal'),
+                    'message': device_result.get('message', "Device analysis complete")
+                },
+                'ip_reputation': {
+                    'risk_score': ip_result.get('risk_score', ip_reputation['score'] if ip_reputation else 0),
+                    'status': ip_result.get('status', 'low_risk'),
+                    'message': ip_result.get('message', "IP reputation analysis complete")
+                },
+                'password_attack': {
+                    'risk_score': password_result.get('risk_score', 0),
+                    'attack_detected': password_result.get('attack_detected', False),
+                    'attack_type': password_result.get('attack_type'),
+                    'message': password_result.get('message', "Password attack analysis complete")
+                },
+                'account_velocity': {
+                    'risk_score': velocity_result.get('risk_score', 90),
+                    'status': velocity_result.get('status', 'normal_velocity'),
+                    'message': velocity_result.get('message', "Account velocity analysis complete")
+                },
+                'session': {
+                    'risk_score': session_result.get('risk_score', 0),
+                    'status': session_result.get('status', 'normal_behavior'),
+                    'message': session_result.get('message', "Session analysis complete")
+                }
             }
-        }
+    
+        except Exception as e:
+            logger.error(f"Error running predictors: {str(e)}")
+            # If an error occurs, create a minimal valid result structure
+            results = {
+                'user_agent': {'risk_score': 0, 'status': 'normal', 'message': "Error in analysis"},
+                'geo_velocity': {'risk_score': 0, 'status': 'normal_travel', 'message': "Error in analysis"},
+                'access_time': {'risk_score': 0, 'status': 'normal', 'message': "Error in analysis"},
+                'device': {'risk_score': 0, 'status': 'normal', 'message': "Error in analysis"},
+                'ip_reputation': {'risk_score': 0, 'status': 'low_risk', 'message': "Error in analysis"},
+                'password_attack': {'risk_score': 0, 'attack_detected': False, 'attack_type': None, 'message': "Error in analysis"},
+                'account_velocity': {'risk_score': 0, 'status': 'normal_velocity', 'message': "Error in analysis"},
+                'session': {'risk_score': 0, 'status': 'normal_behavior', 'message': "Error in analysis"}
+            }
         
         # Calculate overall risk score (weighted average)
         weights = {

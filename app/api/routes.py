@@ -54,6 +54,9 @@ def analyze_request():
         session_events = data.get('session_events', [])
         email = data.get('email', '')
         
+        # Run all predictors with try/except blocks
+        results = {}
+        
         # Run all predictors
         results = {
             # Existing predictors
@@ -71,6 +74,24 @@ def analyze_request():
             'ml_auth_behavior': ml_auth_behavior_analyzer.analyze(user_id, ip_address, timestamp),
             'ml_session_anomaly': ml_session_anomaly_detector.detect(user_id, session_events)
         }
+        
+        try:
+            results['ml_access_time'] = ml_access_time_analyzer.analyze(user_id, timestamp)
+        except Exception as e:
+            logger.error(f"Error in ML access time analysis: {str(e)}")
+            results['ml_access_time'] = {'risk_score': 50, 'status': 'error', 'message': str(e)}
+            
+        try:
+            results['ml_auth_behavior'] = ml_auth_behavior_analyzer.analyze(user_id, ip_address, timestamp)
+        except Exception as e:
+            logger.error(f"Error in ML auth behavior analysis: {str(e)}")
+            results['ml_auth_behavior'] = {'risk_score': 50, 'status': 'error', 'message': str(e)}
+            
+        try:
+            results['ml_session_anomaly'] = ml_session_anomaly_detector.detect(user_id, session_events)
+        except Exception as e:
+            logger.error(f"Error in ML session anomaly detection: {str(e)}")
+            results['ml_session_anomaly'] = {'risk_score': 50, 'status': 'error', 'message': str(e)}
         
         # Update the weights dictionary with new predictors
         # You can either update the existing weights or use config values

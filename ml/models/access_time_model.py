@@ -87,9 +87,8 @@ class AccessTimeAnomalyDetector(BaseAnomalyDetector):
         historical_times = []
         for event in historical_data:
             ts = event.get('timestamp')
-            if isinstance(ts, str):
-                ts = datetime.fromisoformat(ts)
-            historical_times.append(ts)
+            ts_datetime = convert_to_datetime(ts)
+            historical_times.append(ts_datetime)
         
         if not historical_times:
             features.update({
@@ -129,6 +128,13 @@ class AccessTimeAnomalyDetector(BaseAnomalyDetector):
             features['usual_access_window'] = 1 if min_hour <= current_time.hour <= max_hour else 0
         else:
             features['usual_access_window'] = 1
+            
+        # Ensure all datetime comparisons use datetime objects
+        if historical_times:
+            time_diff = (current_time - historical_times[-1]).total_seconds() / 3600
+            features['time_since_last_access'] = time_diff
+        else:
+            features['time_since_last_access'] = 24  # Default value
     
     def train(self, training_data: pd.DataFrame):
         """Train the Isolation Forest model"""

@@ -124,9 +124,7 @@ class SessionAnomalyDetector(BaseAnomalyDetector):
         # Time between requests
         request_times = []
         for event in session_events:
-            event_time = event.get('timestamp')
-            if isinstance(event_time, str):
-                event_time = datetime.fromisoformat(event_time)
+            event_time = convert_to_datetime(event.get('timestamp'))
             request_times.append(event_time)
         
         if len(request_times) > 1:

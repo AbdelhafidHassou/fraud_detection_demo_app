@@ -321,6 +321,19 @@ class AuthBehaviorDetector(BaseAnomalyDetector):
         
         return 0.0
     
+    def predict(self, event_data, historical_data=None):
+        if not self.is_trained or not historical_data:
+            return 0.0  # Default score when not enough data
+        
+        # Normalize historical data timestamps
+        normalized_history = []
+        for item in historical_data:
+            item_copy = item.copy()
+            if 'timestamp' in item_copy:
+                # Ensure timestamp is datetime
+                item_copy['timestamp'] = convert_to_datetime(item_copy['timestamp'])
+            normalized_history.append(item_copy)
+    
     def train(self, training_data: pd.DataFrame):
         """Train the Random Forest model"""
         logger.info(f"Training {self.model_name} with {len(training_data)} samples")

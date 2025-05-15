@@ -88,11 +88,11 @@ class BaseAnomalyDetector(ABC):
         logger.info(f"Model {self.model_name} loaded from {model_file}")
         
 # Add this to ml/models/base.py
-def convert_to_datetime(timestamp) -> datetime:
+def convert_to_datetime(timestamp):
     """Convert various timestamp formats to datetime object"""
     if isinstance(timestamp, datetime):
         return timestamp
-    elif isinstance(timestamp, int):
+    elif isinstance(timestamp, int) or isinstance(timestamp, float):
         return datetime.fromtimestamp(timestamp)
     elif isinstance(timestamp, str):
         try:

@@ -44,17 +44,23 @@ class MLAuthBehaviorAnalyzer:
             # Get user's authentication history
             auth_history = self.db.get_auth_history(user_id)
             
-            # Get relevant context data
-            geo_location = self.db.get_ip_location(ip_address)
-            device_data = self.db.get_recent_device_data(user_id)
+            # Get relevant context data - add safety checks
+            geo_location = None
+            device_data = None
             
-            # Prepare event data
+            if ip_address:
+                geo_location = self.db.get_ip_location(ip_address)
+            
+            if user_id:
+                device_data = self.db.get_recent_device_data(user_id)
+            
+            # Prepare event data - ensure context is always a dictionary
             event_data = {
                 'user_id': user_id,
                 'timestamp': timestamp,
                 'context': {
                     'ip_address': ip_address,
-                    'geo_location': geo_location,
+                    'geo_location': geo_location or {},
                     'device_id': device_data.get('device_id') if device_data else None
                 }
             }

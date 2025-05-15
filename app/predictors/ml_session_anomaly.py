@@ -1,3 +1,4 @@
+from datetime import datetime
 import logging
 import time
 from ml.models.session_anomaly_model import SessionAnomalyDetector
@@ -45,9 +46,18 @@ class MLSessionAnomalyDetector:
                     'message': 'Need at least 2 events for session analysis',
                     'anomaly_score': 0
                 }
-            
+                
             # Sort events by timestamp if not already sorted
-            sorted_events = sorted(session_events, key=lambda x: x.get('timestamp', 0))
+            # Ensure all timestamps are in the same format
+            normalized_events = []
+            for event in session_events:
+                event_copy = event.copy()
+                if isinstance(event_copy.get('timestamp'), datetime):
+                    # Convert datetime to int timestamp if needed
+                    event_copy['timestamp'] = int(event_copy['timestamp'].timestamp())
+                normalized_events.append(event_copy)
+                
+            sorted_events = sorted(normalized_events, key=lambda x: x.get('timestamp', 0))
             
             # Get historical session data
             historical_sessions = self.db.get_historical_sessions(user_id)

@@ -151,7 +151,14 @@ class Database:
                         {'user_id': user_id}
                     ).sort('timestamp', -1).limit(limit)
                 )
-                return logins
+                for login in logins:
+                    if 'timestamp' in login and not isinstance(login['timestamp'], int):
+                        # Convert to int timestamp
+                        if isinstance(login['timestamp'], datetime):
+                            login['timestamp'] = int(login['timestamp'].timestamp())
+                
+                    return logins
+                
             else:
                 # Fetch from file system
                 login_file = f"{self.data_dir}/logins/{user_id}.json"
@@ -163,7 +170,6 @@ class Database:
                         return logins[:limit]
                 
                 return []
-                
         except Exception as e:
             logger.error(f"Error getting login history for user {user_id}: {str(e)}")
             return []

@@ -43,8 +43,14 @@ class MLAccessTimeAnalyzer:
             if timestamp is None:
                 timestamp = int(time.time())
             
-            # Convert timestamp to datetime using utility function
-            login_time = convert_to_datetime(timestamp)
+            # Convert timestamp to datetime consistently
+            current_time = timestamp
+            if isinstance(timestamp, int):
+                login_time = datetime.fromtimestamp(timestamp)
+            else:
+                # If it's already a datetime object
+                login_time = timestamp
+                current_time = int(login_time.timestamp())
             
             # Get user's login history
             login_history = self.db.get_login_history(user_id)

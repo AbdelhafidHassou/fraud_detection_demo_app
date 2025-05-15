@@ -46,82 +46,35 @@ class SessionAnomalyDetector(BaseAnomalyDetector):
         
         # Get session context
         session_id = event_data.get('context', {}).get('session_id')
-        current_time = event_data.get('timestamp')
-        if isinstance(current_time, int):
-            # Unix timestamp (seconds since epoch)
-            current_time = datetime.fromtimestamp(current_time)
-        elif isinstance(current_time, str):
-            try:
-                # ISO format string
-                current_time = datetime.fromisoformat(current_time)
-            except ValueError:
-                # Try parsing as regular date string
-                current_time = datetime.strptime(current_time, "%Y-%m-%d %H:%M:%S")
-        elif not isinstance(current_time, datetime):
-            # Default to current time if invalid format
-            logger.warning(f"Invalid timestamp format: {current_time}, using current time")
-            current_time = datetime.now()
         
-        features = {}
+        # Initialize features with defaults (directly using feature_names)
+        features = {
+            'session_duration': 0,
+            'request_count': 1,
+            'unique_endpoints': 1,
+            'data_volume': 0,
+            'error_rate': 0,
+            'avg_response_time': 100,
+            'endpoint_diversity': 1.0,
+            'request_velocity': 0,
+            'unusual_endpoint_access': 0,
+            'time_between_requests_avg': 0,
+            'time_between_requests_std': 0,
+            'session_start_hour': current_time.hour,
+            'concurrent_sessions': 1,
+            'ip_changes': 0,
+            'user_agent_changes': 0,
+            'privilege_escalation_attempts': 0,
+            'sensitive_data_access': 0,
+            'bulk_data_requests': 0,
+            'api_version_switches': 0,
+            'unusual_http_methods': 0
+        }
         
-        # Basic time features
-        features['hour'] = current_time.hour
-        features['day_of_week'] = current_time.weekday()
-        features['minute'] = current_time.minute
-        features['is_weekend'] = 1 if current_time.weekday() >= 5 else 0
-        
-        if not historical_data or not session_id:
-            # Default values for new sessions - must include ALL features
-            features.update({
-                'session_duration': 0,
-                'request_count': 1,
-                'unique_endpoints': 1,
-                'data_volume': 0,
-                'error_rate': 0,
-                'avg_response_time': 100,
-                'endpoint_diversity': 1.0,  # Added missing feature
-                'request_velocity': 0,
-                'unusual_endpoint_access': 0,
-                'time_between_requests_avg': 0,
-                'time_between_requests_std': 0,
-                'session_start_hour': current_time.hour,
-                'concurrent_sessions': 1,
-                'ip_changes': 0,
-                'user_agent_changes': 0,
-                'privilege_escalation_attempts': 0,
-                'sensitive_data_access': 0,
-                'bulk_data_requests': 0,
-                'api_version_switches': 0,
-                'unusual_http_methods': 0
-            })
-        else:
+        if historical_data and session_id:
             # Extract features from session history
             session_events = [e for e in historical_data 
                             if e.get('context', {}).get('session_id') == session_id]
-            
-            # Initialize features with defaults
-            features = {
-                'session_duration': 0,
-                'request_count': 1,
-                'unique_endpoints': 1,
-                'data_volume': 0,
-                'error_rate': 0,
-                'avg_response_time': 100,
-                'endpoint_diversity': 1.0,
-                'request_velocity': 0,
-                'unusual_endpoint_access': 0,
-                'time_between_requests_avg': 0,
-                'time_between_requests_std': 0,
-                'session_start_hour': current_time.hour,
-                'concurrent_sessions': 1,
-                'ip_changes': 0,
-                'user_agent_changes': 0,
-                'privilege_escalation_attempts': 0,
-                'sensitive_data_access': 0,
-                'bulk_data_requests': 0,
-                'api_version_switches': 0,
-                'unusual_http_methods': 0
-            }
             
             # Extract features from data
             self._extract_session_metrics(features, current_time, session_events)

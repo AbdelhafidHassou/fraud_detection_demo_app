@@ -4,6 +4,7 @@ import time
 from datetime import datetime
 from ml.models.access_time_model import AccessTimeAnomalyDetector
 from app.database import Database
+from ml.models.base import convert_to_datetime
 
 logger = logging.getLogger(__name__)
 
@@ -42,8 +43,8 @@ class MLAccessTimeAnalyzer:
             if timestamp is None:
                 timestamp = int(time.time())
             
-            # Convert timestamp to datetime for easier use
-            login_time = datetime.fromtimestamp(timestamp)
+            # Convert timestamp to datetime using utility function
+            login_time = convert_to_datetime(timestamp)
             
             # Get user's login history
             login_history = self.db.get_login_history(user_id)
@@ -64,8 +65,14 @@ class MLAccessTimeAnalyzer:
             if self.model.is_trained:
                 anomaly_score = self.model.predict(event_data, historical_data)
                 
-                # Calculate risk score (0-100)
-                risk_score = int(anomaly_score * 100)
+                # Anomaly scores are typically between 0-1 where higher values indicate anomalies
+                # Scale to 0-100 risk score with proper thresholding
+                if anomaly_score < 0.3:  # Low anomaly
+                    risk_score = int(anomaly_score * 100 / 3)  # 0-33
+                elif anomaly_score < 0.7:  # Medium anomaly
+                    risk_score = int(33 + (anomaly_score - 0.3) * 100 / 0.4)  # 33-66
+                else:  # High anomaly
+                    risk_score = int(66 + (anomaly_score - 0.7) * 100 / 0.3)  # 66-100
                 
                 # Determine status based on risk score
                 if risk_score > 75:
@@ -77,11 +84,6 @@ class MLAccessTimeAnalyzer:
                 else:
                     status = 'normal'
                     message = 'Login time consistent with historical patterns'
-            else:
-                # Not enough data for prediction
-                risk_score = 0
-                status = 'insufficient_data'
-                message = 'Not enough data for time-based anomaly detection'
             
             # Store current login for future analysis
             self.db.store_login({

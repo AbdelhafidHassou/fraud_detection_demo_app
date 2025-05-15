@@ -103,33 +103,40 @@ class AuthBehaviorDetector(BaseAnomalyDetector):
             except ValueError:
                 current_time = datetime.strptime(current_time, "%Y-%m-%d %H:%M:%S")
                 
-        # Count logins in different time windows
+        # Define time windows
         one_hour_ago = current_time - timedelta(hours=1)
         one_day_ago = current_time - timedelta(days=1)
         one_week_ago = current_time - timedelta(weeks=1)
+        
+        # Initialize counters
+        hour_count = 0
+        day_count = 0
+        week_count = 0
+        failed_count = 0
+        success_count = 0
         
         hour_count = day_count = week_count = 0
         failed_count = success_count = 0
         
         for event in historical_data:
-            event_time = event.get('timestamp')
+            event_time = convert_to_datetime(event.get('timestamp'))
             
-            # Convert event_time to datetime if needed
-            if isinstance(event_time, int):
-                event_time = datetime.fromtimestamp(event_time)
-            elif isinstance(event_time, str):
-                try:
-                    event_time = datetime.fromisoformat(event_time)
-                except ValueError:
-                    try:
-                        event_time = datetime.strptime(event_time, "%Y-%m-%d %H:%M:%S")
-                    except ValueError:
-                        # Skip this event if we can't parse the timestamp
-                        continue
-            
-            # Continue with your existing code for counting events
+            # Count events in different time windows
             if event_time >= one_hour_ago:
                 hour_count += 1
+            
+            if event_time >= one_day_ago:
+                day_count += 1
+                
+            if event_time >= one_week_ago:
+                week_count += 1
+            
+            # Count success/failure events if status is available
+            status = event.get('status')
+            if status == 'success':
+                success_count += 1
+            elif status == 'failure':
+                failed_count += 1
         
         features['login_frequency_hour'] = hour_count
         features['login_frequency_day'] = day_count
@@ -227,23 +234,27 @@ class AuthBehaviorDetector(BaseAnomalyDetector):
         else:
             features['most_common_event_ratio'] = 1.0
         
+        # Get current time from event_data
+        current_time = convert_to_datetime(event_data.get('timestamp'))
+        
         # Typical access patterns
-        access_hours = [datetime.fromisoformat(event['timestamp']).hour 
-                       for event in historical_data 
-                       if isinstance(event.get('timestamp'), str)]
-        access_days = [datetime.fromisoformat(event['timestamp']).weekday() 
-                      for event in historical_data 
-                      if isinstance(event.get('timestamp'), str)]
+        access_hours = []
+        access_days = []
+        
+        for event in historical_data:
+            event_time = convert_to_datetime(event.get('timestamp'))
+            access_hours.append(event_time.hour)
+            access_days.append(event_time.weekday())
         
         if access_hours:
             typical_hours = set(h for h, count in Counter(access_hours).items() if count > len(access_hours) * 0.1)
-            features['is_typical_hour'] = 1 if time.hour in typical_hours else 0
+            features['is_typical_hour'] = 1 if current_time.hour in typical_hours else 0
         else:
             features['is_typical_hour'] = 1
         
         if access_days:
             typical_days = set(d for d, count in Counter(access_days).items() if count > len(access_days) * 0.1)
-            features['is_typical_day'] = 1 if time.weekday() in typical_days else 0
+            features['is_typical_day'] = 1 if current_time.weekday() in typical_days else 0
         else:
             features['is_typical_day'] = 1
     

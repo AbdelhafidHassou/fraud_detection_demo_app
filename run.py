@@ -86,35 +86,47 @@ def train_models():
     logger.info("First run detected - training models with sample data...")
     
     # Import models here to avoid circular imports
-    from ml.models.access_time_model import AccessTimeAnomalyDetector
-    from ml.models.auth_behavior_model import AuthBehaviorDetector
-    from ml.models.session_anomaly_model import SessionAnomalyDetector
+    try:
+        from ml.models.access_time_model import AccessTimeAnomalyDetector
+        from ml.models.auth_behavior_model import AuthBehaviorDetector
+        from ml.models.session_anomaly_model import SessionAnomalyDetector
+    except ImportError as e:
+        logger.error(f"Failed to import ML models: {str(e)}")
+        logger.error("Aborting model training. Please ensure all dependencies are installed.")
+        return False
     
     # Create models directory if it doesn't exist
     os.makedirs("models", exist_ok=True)
     
-    # Generate sample data
-    training_data = generate_sample_data(1000)
-    
-    # Train access time model
-    logger.info("Training AccessTimeAnomalyDetector...")
-    access_time_model = AccessTimeAnomalyDetector()
-    access_time_model.train(training_data)
-    access_time_model.save_model()
-    
-    # Train auth behavior model
-    logger.info("Training AuthBehaviorDetector...")
-    auth_behavior_model = AuthBehaviorDetector()
-    auth_behavior_model.train(training_data)
-    auth_behavior_model.save_model()
-    
-    # Train session anomaly model
-    logger.info("Training SessionAnomalyDetector...")
-    session_anomaly_model = SessionAnomalyDetector()
-    session_anomaly_model.train(training_data)
-    session_anomaly_model.save_model()
-    
-    logger.info("All models trained and saved successfully!")
+    try:
+        # Generate sample data
+        training_data = generate_sample_data(1000)
+        
+        # Train access time model
+        logger.info("Training AccessTimeAnomalyDetector...")
+        access_time_model = AccessTimeAnomalyDetector()
+        access_time_model.train(training_data)
+        access_time_model.save_model()
+        
+        # Train auth behavior model
+        logger.info("Training AuthBehaviorDetector...")
+        auth_behavior_model = AuthBehaviorDetector()
+        auth_behavior_model.train(training_data)
+        auth_behavior_model.save_model()
+        
+        # Train session anomaly model
+        logger.info("Training SessionAnomalyDetector...")
+        session_anomaly_model = SessionAnomalyDetector()
+        session_anomaly_model.train(training_data)
+        session_anomaly_model.save_model()
+        
+        logger.info("All models trained and saved successfully!")
+        return True
+    except Exception as e:
+        logger.error(f"Error during model training: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
+        return False
 
 # Main application
 if __name__ == '__main__':

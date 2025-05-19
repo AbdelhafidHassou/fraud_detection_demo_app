@@ -271,8 +271,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (!userId) {
             document.getElementById('user-info').style.display = 'none';
-            return;
+            return Promise.reject(new Error('No user ID selected'));
         }
+
+        document.getElementById('user-id').value = userId;
 
         const loadingOverlay = document.getElementById('loading-overlay');
         loadingOverlay.classList.add('active');

@@ -53,7 +53,63 @@ def generate_location(ip_address):
             'lat_range': (25.0, 50.0),
             'long_range': (-125.0, -70.0)
         },
-        # [Keep all other continent definitions as in your original code]
+        'Europe': {
+            'countries': ['UK', 'France', 'Germany', 'Italy', 'Spain'],
+            'cities': {
+                'UK': ['London', 'Manchester', 'Birmingham', 'Glasgow', 'Liverpool'],
+                'France': ['Paris', 'Marseille', 'Lyon', 'Toulouse', 'Nice'],
+                'Germany': ['Berlin', 'Hamburg', 'Munich', 'Cologne', 'Frankfurt'],
+                'Italy': ['Rome', 'Milan', 'Naples', 'Turin', 'Palermo'],
+                'Spain': ['Madrid', 'Barcelona', 'Valencia', 'Seville', 'Zaragoza']
+            },
+            'lat_range': (36.0, 60.0),
+            'long_range': (-10.0, 30.0)
+        },
+        'Asia': {
+            'countries': ['China', 'Japan', 'India', 'South Korea', 'Thailand'],
+            'cities': {
+                'China': ['Beijing', 'Shanghai', 'Guangzhou', 'Shenzhen', 'Chengdu'],
+                'Japan': ['Tokyo', 'Osaka', 'Kyoto', 'Yokohama', 'Sapporo'],
+                'India': ['Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Chennai'],
+                'South Korea': ['Seoul', 'Busan', 'Incheon', 'Daegu', 'Daejeon'],
+                'Thailand': ['Bangkok', 'Chiang Mai', 'Phuket', 'Pattaya', 'Krabi']
+            },
+            'lat_range': (10.0, 50.0),
+            'long_range': (70.0, 140.0)
+        },
+        'South America': {
+            'countries': ['Brazil', 'Argentina', 'Colombia', 'Chile', 'Peru'],
+            'cities': {
+                'Brazil': ['São Paulo', 'Rio de Janeiro', 'Brasília', 'Salvador', 'Fortaleza'],
+                'Argentina': ['Buenos Aires', 'Córdoba', 'Rosario', 'Mendoza', 'La Plata'],
+                'Colombia': ['Bogotá', 'Medellín', 'Cali', 'Barranquilla', 'Cartagena'],
+                'Chile': ['Santiago', 'Valparaíso', 'Concepción', 'La Serena', 'Antofagasta'],
+                'Peru': ['Lima', 'Arequipa', 'Trujillo', 'Chiclayo', 'Piura']
+            },
+            'lat_range': (-55.0, 10.0),
+            'long_range': (-80.0, -35.0)
+        },
+        'Africa': {
+            'countries': ['South Africa', 'Nigeria', 'Egypt', 'Kenya', 'Morocco'],
+            'cities': {
+                'South Africa': ['Johannesburg', 'Cape Town', 'Durban', 'Pretoria', 'Port Elizabeth'],
+                'Nigeria': ['Lagos', 'Kano', 'Ibadan', 'Abuja', 'Port Harcourt'],
+                'Egypt': ['Cairo', 'Alexandria', 'Giza', 'Shubra El-Kheima', 'Port Said'],
+                'Kenya': ['Nairobi', 'Mombasa', 'Kisumu', 'Nakuru', 'Eldoret'],
+                'Morocco': ['Casablanca', 'Rabat', 'Fes', 'Marrakesh', 'Tangier']
+            },
+            'lat_range': (-35.0, 35.0),
+            'long_range': (-20.0, 50.0)
+        },
+        'Australia': {
+            'countries': ['Australia', 'New Zealand'],
+            'cities': {
+                'Australia': ['Sydney', 'Melbourne', 'Brisbane', 'Perth', 'Adelaide'],
+                'New Zealand': ['Auckland', 'Wellington', 'Christchurch', 'Hamilton', 'Tauranga']
+            },
+            'lat_range': (-45.0, -10.0),
+            'long_range': (115.0, 180.0)
+        }
     }
     
     # Generate random location data
@@ -77,29 +133,224 @@ def generate_user_agent():
     browsers = [
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:89.0) Gecko/20100101 Firefox/89.0",
-        # [Keep all other browser user agents as in your original code]
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:89.0) Gecko/20100101 Firefox/89.0",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1.1 Safari/605.1.15",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36 Edg/91.0.864.59",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36",
+        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36",
+        "Mozilla/5.0 (iPhone; CPU iPhone OS 14_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1",
+        "Mozilla/5.0 (iPad; CPU OS 14_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1",
+        "Mozilla/5.0 (Android 11; Mobile; rv:68.0) Gecko/68.0 Firefox/88.0",
+        "Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko"
     ]
     return random.choice(browsers)
 
 def generate_device_fingerprint():
     """Generate a random device fingerprint"""
-    # [Keep your original function implementation]
+    ua = generate_user_agent()
+    
+    # Decide if this is a normal or suspicious fingerprint
+    is_suspicious = random.random() < 0.1  # 10% chance of being suspicious
+    
+    # Generate inconsistencies for suspicious fingerprints
+    inconsistencies = []
+    if is_suspicious:
+        possible_inconsistencies = [
+            'automation_detected',
+            'browser_spoofing',
+            'ua_platform_mismatch',
+            'missing_graphics_support',
+            'fingerprint_tampering',
+            'missing_audio_support'
+        ]
+        # Add 1-3 inconsistencies
+        for _ in range(random.randint(1, 3)):
+            if possible_inconsistencies:
+                inconsistency = random.choice(possible_inconsistencies)
+                inconsistencies.append(inconsistency)
+                possible_inconsistencies.remove(inconsistency)
+    
+    # Generate the fingerprint
+    fingerprint = {
+        'userAgent': ua,
+        'language': random.choice(['en-US', 'en-GB', 'fr-FR', 'de-DE', 'es-ES', 'zh-CN', 'ja-JP']),
+        'platform': random.choice(['Win32', 'MacIntel', 'Linux x86_64', 'iPhone', 'iPad', 'Android']),
+        'timezone': {
+            'offset': random.choice([-480, -420, -360, -300, -240, -120, 0, 60, 120, 180, 240, 300, 360, 480, 540, 600]),
+            'timezone': fake.timezone()
+        },
+        'screen': {
+            'width': random.choice([1366, 1440, 1536, 1600, 1680, 1920, 2560, 3440, 3840]),
+            'height': random.choice([768, 900, 1024, 1080, 1200, 1440, 2160]),
+            'colorDepth': random.choice([24, 32]),
+            'pixelRatio': random.choice([1, 1.5, 2, 3])
+        },
+        'canvasSupported': not is_suspicious or random.random() > 0.3,  # Only sometimes disabled for suspicious
+        'webgl': {
+            'supported': not is_suspicious or random.random() > 0.3,  # Only sometimes disabled for suspicious
+            'vendor': 'Google Inc.' if not is_suspicious else None,
+            'renderer': 'ANGLE (Intel, Intel(R) HD Graphics Direct3D11 vs_5_0 ps_5_0, D3D11)' if not is_suspicious else None
+        },
+        'audio': {
+            'supported': not is_suspicious or random.random() > 0.3  # Only sometimes disabled for suspicious
+        },
+        'inconsistencies': inconsistencies
+    }
+    
+    # Generate a device ID (hash)
+    device_id = str(uuid.uuid4())
+    
+    return device_id, fingerprint
 
 def generate_session_events():
     """Generate a random sequence of session events"""
-    # [Keep your original function implementation]
+    common_events = [
+        'login',
+        'view_dashboard',
+        'view_account',
+        'view_transactions',
+        'view_profile',
+        'logout'
+    ]
+    
+    suspicious_events = [
+        'change_email',
+        'change_password',
+        'add_payment_method',
+        'large_transaction',
+        'export_data',
+        'disable_2fa'
+    ]
+    
+    # Decide if this is a normal or suspicious session
+    is_suspicious = random.random() < 0.1  # 10% chance of being suspicious
+    
+    # Generate session length
+    if is_suspicious:
+        session_length = random.randint(4, 10)  # Suspicious sessions tend to be longer
+    else:
+        session_length = random.randint(2, 6)  # Normal sessions
+    
+    # Generate events
+    events = []
+    
+    # Always start with login
+    events.append({
+        'type': 'login',
+        'timestamp': int(time.time()) - random.randint(60, 3600)  # Between 1 minute and 1 hour ago
+    })
+    
+    # Generate middle events
+    available_events = common_events.copy()
+    if is_suspicious:
+        available_events.extend(suspicious_events)
+    
+    for i in range(session_length - 2):  # -2 because we manually add login and logout
+        event_type = random.choice(available_events)
+        # If we picked a suspicious event, remove it to avoid repetition
+        if event_type in suspicious_events:
+            available_events.remove(event_type)
+        
+        # Add the event with a timestamp that's after the previous event
+        events.append({
+            'type': event_type,
+            'timestamp': events[-1]['timestamp'] + random.randint(30, 300)  # 30 seconds to 5 minutes after previous
+        })
+    
+    # Always end with logout (usually)
+    if random.random() < 0.9:  # 90% chance of having logout
+        events.append({
+            'type': 'logout',
+            'timestamp': events[-1]['timestamp'] + random.randint(30, 300)
+        })
+    
+    return events
 
 def generate_reputation_data(ip_address, is_malicious=False):
     """Generate IP reputation data"""
-    # [Keep your original function implementation]
+    # Base reputation
+    if is_malicious:
+        is_proxy = random.random() < 0.5
+        is_tor = random.random() < 0.3
+        is_datacenter = random.random() < 0.6
+        is_vpn = random.random() < 0.7
+        is_known_abuser = True
+        score = random.randint(70, 95)
+    else:
+        is_proxy = random.random() < 0.05
+        is_tor = random.random() < 0.01
+        is_datacenter = random.random() < 0.1
+        is_vpn = random.random() < 0.1
+        is_known_abuser = False
+        score = random.randint(10, 40)
+    
+    return {
+        'ip_address': ip_address,
+        'reputation': {
+            'score': score,
+            'is_proxy': is_proxy,
+            'is_tor': is_tor,
+            'is_datacenter': is_datacenter,
+            'is_vpn': is_vpn,
+            'is_known_abuser': is_known_abuser,
+            'failed_logins': random.randint(0, 10) if not is_malicious else random.randint(5, 30),
+            'countries_count': random.randint(1, 2) if not is_malicious else random.randint(2, 8),
+            'last_updated': generate_timestamp(days_back=7)
+        },
+        'location': generate_location(ip_address)
+    }
 
 def generate_user_model(user_id):
     """Generate a behavioral model for a user"""
-    # [Keep your original function implementation]
+    # Define possible transitions between pages
+    transitions = {
+        'login': {'view_dashboard': 0.7, 'view_profile': 0.2, 'view_settings': 0.1},
+        'view_dashboard': {'view_account': 0.4, 'view_transactions': 0.4, 'logout': 0.1, 'view_profile': 0.1},
+        'view_account': {'view_transactions': 0.5, 'view_dashboard': 0.3, 'logout': 0.2},
+        'view_transactions': {'view_dashboard': 0.4, 'view_account': 0.3, 'logout': 0.3},
+        'view_profile': {'view_dashboard': 0.5, 'edit_profile': 0.3, 'logout': 0.2},
+        'edit_profile': {'view_profile': 0.7, 'view_dashboard': 0.2, 'logout': 0.1},
+        'view_settings': {'view_dashboard': 0.5, 'edit_settings': 0.3, 'logout': 0.2},
+        'edit_settings': {'view_settings': 0.7, 'view_dashboard': 0.2, 'logout': 0.1}
+    }
+    
+    # Add some randomness to the transitions
+    for from_state in transitions:
+        for to_state in transitions[from_state]:
+            # Add or subtract up to 0.1
+            transitions[from_state][to_state] += random.uniform(-0.1, 0.1)
+        
+        # Normalize to ensure probabilities sum to 1
+        total = sum(transitions[from_state].values())
+        for to_state in transitions[from_state]:
+            transitions[from_state][to_state] /= total
+    
+    return {
+        'user_id': user_id,
+        'transitions': transitions,
+        'avg_session_length': random.randint(300, 1800),  # 5 to 30 minutes
+        'avg_time_between_actions': random.randint(20, 120),  # 20 seconds to 2 minutes
+        'common_actions': ['view_dashboard', 'view_account', 'view_transactions'],
+        'session_count': random.randint(5, 100),
+        'last_updated': generate_timestamp(days_back=14)
+    }
 
 def generate_users(num_users):
     """Generate user accounts"""
-    # [Keep your original function implementation]
+    users = []
+    for i in range(num_users):
+        user_id = f"user{i+1:03d}"
+        email = f"{user_id}@example.com"
+        
+        users.append({
+            'user_id': user_id,
+            'email': email,
+            'created_at': generate_timestamp(days_back=90),
+            'last_login': None  # Will be updated later
+        })
+    
+    return users
 
 def generate_database(db):
     """Generate the entire test database"""
@@ -112,7 +363,177 @@ def generate_database(db):
     users = generate_users(NUM_USERS)
     db.users.insert_many(users)
     
-    # [Keep all other data generation steps as in your original code]
+    logger.info("Generating IP data...")
+    # Generate IP data including some known bad IPs
+    ip_data = []
+    bad_ips = []
+    
+    # Generate known bad IPs
+    for _ in range(NUM_KNOWN_BAD_IPS):
+        ip = generate_ip()
+        bad_ips.append(ip)
+        ip_data.append(generate_reputation_data(ip, is_malicious=True))
+    
+    # Insert IP data
+    if ip_data:
+        db.ip_data.insert_many(ip_data)
+    
+    logger.info("Generating device fingerprints...")
+    # Generate device fingerprints for users
+    devices = []
+    
+    for user in users:
+        user_id = user['user_id']
+        # Generate 1-3 devices per user
+        for _ in range(random.randint(1, NUM_DEVICES_PER_USER)):
+            device_id, fingerprint = generate_device_fingerprint()
+            
+            device_data = {
+                'device_id': device_id,
+                'user_id': user_id,
+                'first_seen': generate_timestamp(days_back=60),
+                'last_seen': generate_timestamp(days_back=10),
+                'visit_count': random.randint(1, 50),
+                'fingerprints': [fingerprint],
+                'issues_history': fingerprint.get('inconsistencies', [])
+            }
+            
+            devices.append(device_data)
+    
+    if devices:
+        db.devices.insert_many(devices)
+    
+    logger.info("Generating login history...")
+    # Generate login history
+    logins = []
+    
+    for user in users:
+        user_id = user['user_id']
+        user_logins = []
+        
+        # Generate multiple logins per user
+        for _ in range(random.randint(5, NUM_LOGINS_PER_USER)):
+            # Get one of the user's devices
+            user_devices = [d for d in devices if d['user_id'] == user_id]
+            device = random.choice(user_devices) if user_devices else None
+            
+            # Generate location and IP
+            ip_address = generate_ip()
+            location = generate_location(ip_address)
+            
+            # 5% chance of using a known bad IP
+            if random.random() < 0.05 and bad_ips:
+                ip_address = random.choice(bad_ips)
+            
+            timestamp = generate_timestamp(days_back=30)
+            
+            login_data = {
+                'user_id': user_id,
+                'ip': ip_address,
+                'location': location,
+                'timestamp': timestamp,
+                'device_id': device['device_id'] if device else None,
+                'user_agent': generate_user_agent()
+            }
+            
+            logins.append(login_data)
+            user_logins.append(login_data)
+        
+        # Sort logins by timestamp
+        user_logins.sort(key=lambda x: x['timestamp'])
+        
+        # Update user's last login
+        if user_logins:
+            db.users.update_one(
+                {'user_id': user_id},
+                {'$set': {'last_login': user_logins[-1]}}
+            )
+    
+    if logins:
+        db.logins.insert_many(logins)
+    
+    logger.info("Generating failed logins...")
+    # Generate failed logins
+    failed_logins = []
+    
+    for _ in range(NUM_FAILED_LOGINS):
+        # 80% of failed logins are for real users, 20% for non-existent users
+        if random.random() < 0.8:
+            user = random.choice(users)
+            username = user['user_id']
+        else:
+            username = f"nonuser{random.randint(1, 1000)}"
+        
+        # 10% chance of using a known bad IP
+        if random.random() < 0.1 and bad_ips:
+            ip_address = random.choice(bad_ips)
+        else:
+            ip_address = generate_ip()
+        
+        timestamp = generate_timestamp(days_back=7)  # More recent
+        
+        failed_logins.append({
+            'username': username,
+            'ip_address': ip_address,
+            'timestamp': timestamp
+        })
+    
+    if failed_logins:
+        db.failed_logins.insert_many(failed_logins)
+    
+    logger.info("Generating user behavior models...")
+    # Generate user behavior models
+    user_models = []
+    
+    for user in users:
+        user_id = user['user_id']
+        user_models.append(generate_user_model(user_id))
+    
+    if user_models:
+        db.user_models.insert_many(user_models)
+    
+    logger.info("Generating registrations...")
+    # Generate account registrations
+    registrations = []
+    
+    for _ in range(NUM_REGISTRATIONS):
+        timestamp = generate_timestamp(days_back=90)
+        ip_address = generate_ip()
+        
+        # 5% chance of using a known bad IP
+        if random.random() < 0.05 and bad_ips:
+            ip_address = random.choice(bad_ips)
+        
+        email_domain = random.choice(['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'example.com'])
+        
+        registrations.append({
+            'timestamp': timestamp,
+            'ip_address': ip_address,
+            'email_domain': email_domain,
+            'success': random.random() < 0.9  # 90% success rate
+        })
+    
+    if registrations:
+        db.registrations.insert_many(registrations)
+    
+    logger.info("Generating session events...")
+    # Generate session events
+    all_sessions = []
+    
+    for user in users:
+        user_id = user['user_id']
+        # Generate 3-10 sessions per user
+        for _ in range(random.randint(3, 10)):
+            events = generate_session_events()
+            
+            session_id = str(uuid.uuid4())
+            for event in events:
+                event['user_id'] = user_id
+                event['session_id'] = session_id
+                all_sessions.append(event)
+    
+    if all_sessions:
+        db.sessions.insert_many(all_sessions)
     
     logger.info("Database generation complete!")
     return {
